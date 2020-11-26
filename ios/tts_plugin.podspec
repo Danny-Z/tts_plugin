@@ -10,12 +10,12 @@ A flutter text to speech plugin
                        DESC
   s.homepage         = 'https://github.com/Danny-Z/tts_plugin'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'tundralabs' => 'eyedea32@gmail.com' }
+  s.author           = { '' => '' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-  s.ios.deployment_target = '8.0'
+  s.platform = :ios, '8.0'
   s.swift_version = '4.2'
   s.static_framework = true
 end

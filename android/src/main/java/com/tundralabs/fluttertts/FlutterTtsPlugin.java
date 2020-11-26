@@ -34,8 +34,7 @@ public class FlutterTtsPlugin implements MethodCallHandler, FlutterPlugin {
   private Context context;
   private TextToSpeech tts;
   private final String tag = "TTS";
-  // private final String googleTtsEngine = "com.google.android.tts";
-  private final String googleTtsEngine = "com.baidu.duersdk.opensdk";
+  private final String googleTtsEngine = "com.google.android.tts";
   private boolean isTtsInitialized = false;
   private ArrayList<Runnable> pendingMethodCalls = new ArrayList<>();
   private final HashMap<String, String> utterances = new HashMap<>();
@@ -173,6 +172,8 @@ public class FlutterTtsPlugin implements MethodCallHandler, FlutterPlugin {
         });
   }
 
+  private Result initResultListener;
+
   private TextToSpeech.OnInitListener onInitListener =
       new TextToSpeech.OnInitListener() {
         @Override
@@ -191,6 +192,12 @@ public class FlutterTtsPlugin implements MethodCallHandler, FlutterPlugin {
 
             // Handle pending method calls (sent while TTS was initializing)
             isTtsInitialized = true;
+
+            if (initResultListener != null){
+              initResultListener.success(1);
+              initResultListener = null;
+            }
+
             for (Runnable call : pendingMethodCalls) {
               handler.post(call);
             }
@@ -332,12 +339,13 @@ public class FlutterTtsPlugin implements MethodCallHandler, FlutterPlugin {
   }
 
   void setEngine(String engine, Result result){
+    isTtsInitialized = false;
     tts.stop();
     tts.shutdown();
 
+    initResultListener = result;
+
     tts = new TextToSpeech(context, onInitListener, engine);
-   
-    result.success(1);
   }
 
   void setVoice(String voice, Result result) {
