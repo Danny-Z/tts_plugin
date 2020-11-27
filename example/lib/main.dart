@@ -48,60 +48,65 @@ class _MyAppState extends State<MyApp> {
 
   initTts() async {
     flutterTts = FlutterTts();
-    if (!kIsWeb) {
-      if (Platform.isAndroid) {
-        _getEngines();
+    var enable = await flutterTts.enable;
+    if (!enable) {
+      print("flutterTts.enable = false");
+    } else {
+      if (!kIsWeb) {
+        if (Platform.isAndroid) {
+          _getEngines();
+        }
       }
-    }
 
-    flutterTts.setStartHandler(() {
-      setState(() {
-        print("Playing");
-        ttsState = TtsState.playing;
-      });
-    });
-
-    flutterTts.setCompletionHandler(() {
-      setState(() {
-        print("Complete");
-        ttsState = TtsState.stopped;
-      });
-    });
-
-    flutterTts.setCancelHandler(() {
-      setState(() {
-        print("Cancel");
-        ttsState = TtsState.stopped;
-      });
-    });
-
-    if (kIsWeb || Platform.isIOS) {
-      flutterTts.setPauseHandler(() {
+      flutterTts.setStartHandler(() {
         setState(() {
-          print("Paused");
-          ttsState = TtsState.paused;
+          print("Playing");
+          ttsState = TtsState.playing;
         });
       });
 
-      flutterTts.setContinueHandler(() {
+      flutterTts.setCompletionHandler(() {
         setState(() {
-          print("Continued");
-          ttsState = TtsState.continued;
+          print("Complete");
+          ttsState = TtsState.stopped;
         });
       });
-    }
 
-    flutterTts.setErrorHandler((msg) {
-      setState(() {
-        print("error: $msg");
-        ttsState = TtsState.stopped;
+      flutterTts.setCancelHandler(() {
+        setState(() {
+          print("Cancel");
+          ttsState = TtsState.stopped;
+        });
       });
-    });
 
-    engines = await flutterTts.getEngines;
-    languages = (await flutterTts.getLanguages).where((e) => e.startsWith("zh")).toList();
-    voices = await flutterTts.getVoices;
-    setState(() {});
+      if (kIsWeb || Platform.isIOS) {
+        flutterTts.setPauseHandler(() {
+          setState(() {
+            print("Paused");
+            ttsState = TtsState.paused;
+          });
+        });
+
+        flutterTts.setContinueHandler(() {
+          setState(() {
+            print("Continued");
+            ttsState = TtsState.continued;
+          });
+        });
+      }
+
+      flutterTts.setErrorHandler((msg) {
+        setState(() {
+          print("error: $msg");
+          ttsState = TtsState.stopped;
+        });
+      });
+
+      engines = await flutterTts.getEngines;
+      languages = (await flutterTts.getLanguages).where((e) => e.startsWith("zh")).toList();
+      voices = await flutterTts.getVoices;
+      setState(() {});
+    }
   }
 
   Future _getEngines() async {

@@ -2,7 +2,7 @@
 
 Special application scenarios, so PR was not submitted
 
-copy from [flutter_tts](https://pub.dartlang.org/packages/tts_plugin)
+copy from [flutter_tts](https://pub.dartlang.org/packages/flutter_tts)
 
 
 ## Features

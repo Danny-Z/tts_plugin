@@ -200,6 +200,14 @@ class FlutterTts {
     return ((await _channel.invokeMethod('getVoices')) as List<dynamic>).map((e) => e as String).toList();
   }
 
+  Future<bool> get enable async {
+    if (Platform.isIOS) {
+      return true;
+    } else {
+      return (await _channel.invokeMethod('enable')) == 1;
+    }
+  }
+
   /// [Future] which invokes the platform specific method for isLanguageAvailable
   /// Returns `true` or `false`
   Future<bool> isLanguageAvailable(String language) => _channel.invokeMethod('isLanguageAvailable', language);

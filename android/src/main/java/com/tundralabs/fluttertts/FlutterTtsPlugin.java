@@ -36,6 +36,8 @@ public class FlutterTtsPlugin implements MethodCallHandler, FlutterPlugin {
   private final String tag = "TTS";
   private final String googleTtsEngine = "com.google.android.tts";
   private boolean isTtsInitialized = false;
+  private static boolean isTtsInitFailed = false;
+  private ArrayList<Runnable> initMethodCalls = new ArrayList<>();
   private ArrayList<Runnable> pendingMethodCalls = new ArrayList<>();
   private final HashMap<String, String> utterances = new HashMap<>();
   Bundle bundle;
@@ -172,12 +174,12 @@ public class FlutterTtsPlugin implements MethodCallHandler, FlutterPlugin {
         });
   }
 
-  private Result initResultListener;
-
   private TextToSpeech.OnInitListener onInitListener =
       new TextToSpeech.OnInitListener() {
         @Override
         public void onInit(int status) {
+          isTtsInitialized = true;
+
           if (status == TextToSpeech.SUCCESS) {
             tts.setOnUtteranceProgressListener(utteranceProgressListener);
 
@@ -191,18 +193,21 @@ public class FlutterTtsPlugin implements MethodCallHandler, FlutterPlugin {
             }
 
             // Handle pending method calls (sent while TTS was initializing)
-            isTtsInitialized = true;
 
-            if (initResultListener != null){
-              initResultListener.success(1);
-              initResultListener = null;
+            for (Runnable call : initMethodCalls) {
+              handler.post(call);
             }
 
             for (Runnable call : pendingMethodCalls) {
               handler.post(call);
             }
           } else {
+            isTtsInitFailed = true;
             Log.e(tag, "Failed to initialize TextToSpeech");
+
+            for (Runnable call : initMethodCalls) {
+              handler.post(call);
+            }
           }
         }
       };
@@ -210,15 +215,33 @@ public class FlutterTtsPlugin implements MethodCallHandler, FlutterPlugin {
   @Override
   public void onMethodCall(@NonNull final MethodCall call, @NonNull final Result result) {
     // If TTS is still loading
+    if(isTtsInitialized && call.method.equals("enable")){
+      result.success(isTtsInitFailed ? 0 : 1);
+      return;
+    }
     if (!isTtsInitialized) {
-      // Suspend method call until the TTS engine is ready
-      final Runnable suspendedCall =
-          new Runnable() {
-            public void run() {
-              onMethodCall(call, result);
-            }
-          };
-      pendingMethodCalls.add(suspendedCall);
+      if(call.method.equals("enable")){
+        final Runnable suspendedCall =
+                new Runnable() {
+                  public void run() {
+                    result.success(isTtsInitFailed ? 0 : 1);
+                  }
+                };
+        initMethodCalls.add(suspendedCall);
+      } else {
+        // Suspend method call until the TTS engine is ready
+        final Runnable suspendedCall =
+                new Runnable() {
+                  public void run() {
+                    onMethodCall(call, result);
+                  }
+                };
+        pendingMethodCalls.add(suspendedCall);
+      }
+      return;
+    }
+    if(isTtsInitFailed){
+      result.error("tts init failed", "tts not support", null);
       return;
     }
     switch (call.method) {
@@ -338,12 +361,17 @@ public class FlutterTtsPlugin implements MethodCallHandler, FlutterPlugin {
     }
   }
 
-  void setEngine(String engine, Result result){
+  void setEngine(String engine,final Result result){
     isTtsInitialized = false;
     tts.stop();
     tts.shutdown();
 
-    initResultListener = result;
+    initMethodCalls.add(new Runnable() {
+      @Override
+      public void run() {
+        result.success(isTtsInitFailed ? 0 : 1);
+      }
+    });
 
     tts = new TextToSpeech(context, onInitListener, engine);
   }
