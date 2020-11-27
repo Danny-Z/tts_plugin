@@ -193,20 +193,20 @@ public class FlutterTtsPlugin implements MethodCallHandler, FlutterPlugin {
             }
 
             // Handle pending method calls (sent while TTS was initializing)
-
-            for (Runnable call : initMethodCalls) {
-              handler.post(call);
+            while(!initMethodCalls.isEmpty()){
+              handler.post(initMethodCalls.remove(0));
             }
 
-            for (Runnable call : pendingMethodCalls) {
-              handler.post(call);
+            while(!pendingMethodCalls.isEmpty()){
+              handler.post(pendingMethodCalls.remove(0));
             }
+
           } else {
             isTtsInitFailed = true;
             Log.e(tag, "Failed to initialize TextToSpeech");
 
-            for (Runnable call : initMethodCalls) {
-              handler.post(call);
+            while(!initMethodCalls.isEmpty()){
+              handler.post(initMethodCalls.remove(0));
             }
           }
         }
@@ -361,7 +361,8 @@ public class FlutterTtsPlugin implements MethodCallHandler, FlutterPlugin {
     }
   }
 
-  void setEngine(String engine,final Result result){
+  void setEngine(final String engine,final Result result){
+    final long setTime = System.currentTimeMillis();
     isTtsInitialized = false;
     tts.stop();
     tts.shutdown();
